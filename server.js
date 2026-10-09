@@ -12,37 +12,34 @@ const { Pool } = require("pg");
 const createAuthRouter = require("./routes/auth");
 const createAdminRouter = require("./routes/admin");
 
-const requiredEnvironment = ["DATABASE_URL", "SESSION_SECRET"];
-const missingEnvironment = requiredEnvironment.filter(name => !process.env[name]);
+const hasDatabaseUrl = Boolean(process.env.DATABASE_URL);
+const hasSessionSecret =
+  Buffer.byteLength(process.env.SESSION_SECRET || "", "utf8") >= 32;
+const authConfigured = hasDatabaseUrl && hasSessionSecret;
+const pool = hasDatabaseUrl
+  ? new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: { rejectUnauthorized: true },
+      max: 5,
+      idleTimeoutMillis: 10000,
+      connectionTimeoutMillis: 15000
+    })
+  : null;
 
-if (missingEnvironment.length > 0) {
-  throw new Error(
-    `Missing required environment variables: ${missingEnvironment.join(", ")}. ` +
-    "Set them in Vercel or in a local .env file."
-  );
+if (pool) {
+  pool.on("error", error => {
+    console.error("PostgreSQL pool error:", error.message);
+  });
 }
 
-if (Buffer.byteLength(process.env.SESSION_SECRET, "utf8") < 32) {
-  throw new Error("SESSION_SECRET must contain at least 32 bytes.");
-}
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: true },
-  max: 5,
-  idleTimeoutMillis: 10000,
-  connectionTimeoutMillis: 15000
-});
-pool.on("error", error => {
-  console.error("PostgreSQL pool error:", error.message);
-});
-
-const sessionStore = new PgStore({
-  pool,
-  tableName: "sessions",
-  createTableIfMissing: false,
-  pruneSessionInterval: false
-});
+const sessionStore = authConfigured
+  ? new PgStore({
+      pool,
+      tableName: "sessions",
+      createTableIfMissing: false,
+      pruneSessionInterval: false
+    })
+  : null;
 const app = express();
 const publicDirectory = path.join(__dirname, "public");
 
@@ -72,19 +69,21 @@ app.use(express.static(publicDirectory, {
   dotfiles: "deny",
   index: false
 }));
-app.use(session({
-  name: "nzuri.sid",
-  secret: process.env.SESSION_SECRET,
-  store: sessionStore,
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    maxAge: null
-  }
-}));
+if (authConfigured) {
+  app.use(session({
+    name: "nzuri.sid",
+    secret: process.env.SESSION_SECRET,
+    store: sessionStore,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      maxAge: null
+    }
+  }));
+}
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -106,7 +105,7 @@ app.get("/admin/login", (req, res) => {
   res.sendFile(path.join(publicDirectory, "admin-login.html"));
 });
 app.get("/admin/setup", (req, res) => {
-  if (!process.env.ADMIN_SETUP_KEY) {
+  if (!authConfigured || !process.env.ADMIN_SETUP_KEY) {
     res.redirect("/admin/login");
     return;
   }
@@ -121,6 +120,15 @@ app.get("/admin/dashboard", (req, res) => {
 });
 
 app.get("/api/health", async (req, res, next) => {
+  if (!authConfigured) {
+    res.status(503).json({
+      success: false,
+      status: "configuration_required",
+      message: "Add DATABASE_URL and SESSION_SECRET to the deployment environment."
+    });
+    return;
+  }
+
   try {
     await pool.query("SELECT 1");
     res.status(200).json({ success: true, status: "online" });
@@ -129,13 +137,22 @@ app.get("/api/health", async (req, res, next) => {
   }
 });
 
-app.use("/api/auth/login", loginLimiter);
-app.use("/api/auth/setup", setupLimiter);
-app.use("/api/auth", createAuthRouter({
-  pool,
-  getSetupKey: () => process.env.ADMIN_SETUP_KEY || ""
-}));
-app.use("/api/admin", createAdminRouter(pool));
+if (!authConfigured) {
+  app.use("/api", (req, res) => {
+    res.status(503).json({
+      success: false,
+      message: "Admin sign-in is not configured yet. Add DATABASE_URL and SESSION_SECRET to the Vercel project environment variables, then redeploy."
+    });
+  });
+} else {
+  app.use("/api/auth/login", loginLimiter);
+  app.use("/api/auth/setup", setupLimiter);
+  app.use("/api/auth", createAuthRouter({
+    pool,
+    getSetupKey: () => process.env.ADMIN_SETUP_KEY || ""
+  }));
+  app.use("/api/admin", createAdminRouter(pool));
+}
 
 app.use("/api", (req, res) => {
   res.status(404).json({ success: false, message: "API route not found." });
@@ -166,5 +183,8 @@ if (require.main === module) {
   const port = Number(process.env.PORT || 3000);
   app.listen(port, "127.0.0.1", () => {
     console.log(`Nzuri Venue Management is running at http://127.0.0.1:${port}`);
+    if (!authConfigured) {
+      console.warn("Admin sign-in is disabled until DATABASE_URL and SESSION_SECRET are configured.");
+    }
   });
 }
