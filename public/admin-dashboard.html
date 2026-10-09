@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#174b48">
+  <title>Admin dashboard | Nzuri Venue Management</title>
+  <link rel="stylesheet" href="/styles/admin-dashboard.css">
+  <script src="/scripts/admin-dashboard.js" defer></script>
+</head>
+<body>
+  <header class="admin-header">
+    <div class="header-inner">
+      <a class="brand" href="/" aria-label="Nzuri Venue Management home">
+        <span class="brand-name">NZURI</span>
+        <span class="brand-subtitle">Venue Management</span>
+      </a>
+      <nav class="admin-nav" aria-label="Administration">
+        <a class="current" href="/admin/dashboard" aria-current="page">Dashboard</a>
+        <span aria-disabled="true" title="Coming in a later phase">Venues</span>
+        <span aria-disabled="true" title="Coming in a later phase">Bookings</span>
+        <span aria-disabled="true" title="Coming in a later phase">Timetable</span>
+        <span aria-disabled="true" title="Coming in a later phase">Check room availability</span>
+        <button id="logout-button" class="logout-button" type="button">Logout</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="dashboard-main">
+    <section class="page-heading" aria-labelledby="page-title">
+      <div>
+        <p class="eyebrow">Administration</p>
+        <h1 id="page-title">Admin dashboard</h1>
+        <p class="page-intro">Welcome, <span id="admin-name">administrator</span>. Manage venues and booking requests.</p>
+      </div>
+    </section>
+
+    <p id="dashboard-message" class="dashboard-message" role="status" aria-live="polite" hidden></p>
+
+    <section class="stats-grid" aria-label="Venue and booking statistics">
+      <article class="stat-card stat-green">
+        <p class="stat-label">Total venues</p>
+        <p class="stat-value" id="total-venues">—</p>
+        <p class="stat-note">Active venues</p>
+      </article>
+      <article class="stat-card stat-green">
+        <p class="stat-label">Available</p>
+        <p class="stat-value" id="available-venues">—</p>
+        <p class="stat-note">Free right now</p>
+      </article>
+      <article class="stat-card stat-red">
+        <p class="stat-label">Occupied</p>
+        <p class="stat-value" id="occupied-venues">—</p>
+        <p class="stat-note">In use right now</p>
+      </article>
+      <article class="stat-card stat-accent">
+        <p class="stat-label">Pending</p>
+        <p class="stat-value" id="pending-bookings">—</p>
+        <p class="stat-note">Need attention</p>
+      </article>
+      <article class="stat-card stat-green">
+        <p class="stat-label">Approved</p>
+        <p class="stat-value" id="approved-bookings">—</p>
+        <p class="stat-note">Confirmed bookings</p>
+      </article>
+    </section>
+
+    <div class="dashboard-grid">
+      <section class="panel management-panel" aria-labelledby="management-title">
+        <div class="panel-heading">
+          <div class="panel-icon" aria-hidden="true">+</div>
+          <div>
+            <h2 id="management-title">Management</h2>
+            <p>Manage the main parts of the system.</p>
+          </div>
+        </div>
+        <div class="management-grid">
+          <article class="management-item">
+            <h3>Manage venues</h3>
+            <p>Add, edit and manage venues.</p>
+            <span class="coming-soon">Coming later</span>
+          </article>
+          <article class="management-item">
+            <h3>Add venues</h3>
+            <p>Add one venue or upload many from a spreadsheet.</p>
+            <span class="coming-soon">Coming later</span>
+          </article>
+          <article class="management-item">
+            <h3>Booking requests</h3>
+            <p>Review and respond to requests.</p>
+            <span class="coming-soon">Coming later</span>
+          </article>
+          <article class="management-item">
+            <h3>Upload timetable</h3>
+            <p>Import recurring room occupancy.</p>
+            <span class="coming-soon">Coming later</span>
+          </article>
+        </div>
+      </section>
+
+      <section class="panel overview-panel" aria-labelledby="overview-title">
+        <div class="panel-heading">
+          <div class="panel-icon" aria-hidden="true">≡</div>
+          <div>
+            <h2 id="overview-title">Booking overview</h2>
+            <p>Current system activity.</p>
+          </div>
+        </div>
+        <dl class="overview-list">
+          <div><dt>Total bookings</dt><dd id="total-bookings">—</dd></div>
+          <div><dt>Pending</dt><dd id="overview-pending">—</dd></div>
+          <div><dt>Approved</dt><dd id="overview-approved">—</dd></div>
+          <div><dt>Rejected</dt><dd id="rejected-bookings">—</dd></div>
+        </dl>
+      </section>
+    </div>
+    <p class="phase-note">Venue and booking management actions will be added in later development phases.</p>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-columns">
+        <section>
+          <p class="footer-brand">NZURI <span>Venue Management</span></p>
+          <p class="footer-description">Find the right space for your next class, meeting or campus event.</p>
+        </section>
+        <nav class="footer-links" aria-label="Explore">
+          <h2 class="footer-heading">Explore</h2>
+          <a href="/">Venue directory</a>
+          <a href="/">Check availability</a>
+        </nav>
+        <section class="footer-location">
+          <h2 class="footer-heading">Nzuri University of Science</h2>
+          <p>Lamu, Kenya</p>
+        </section>
+      </div>
+      <div class="footer-bottom">
+        <span>© 2026 NZURI NUS</span>
+        <span>Space for learning, collaboration and innovation.</span>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

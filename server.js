@@ -1,0 +1,170 @@
+"use strict";
+
+require("dotenv").config();
+
+const path = require("node:path");
+const express = require("express");
+const session = require("express-session");
+const PgStore = require("connect-pg-simple")(session);
+const { rateLimit } = require("express-rate-limit");
+const helmet = require("helmet");
+const { Pool } = require("pg");
+const createAuthRouter = require("./routes/auth");
+const createAdminRouter = require("./routes/admin");
+
+const requiredEnvironment = ["DATABASE_URL", "SESSION_SECRET"];
+const missingEnvironment = requiredEnvironment.filter(name => !process.env[name]);
+
+if (missingEnvironment.length > 0) {
+  throw new Error(
+    `Missing required environment variables: ${missingEnvironment.join(", ")}. ` +
+    "Set them in Vercel or in a local .env file."
+  );
+}
+
+if (Buffer.byteLength(process.env.SESSION_SECRET, "utf8") < 32) {
+  throw new Error("SESSION_SECRET must contain at least 32 bytes.");
+}
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: true },
+  max: 5,
+  idleTimeoutMillis: 10000,
+  connectionTimeoutMillis: 15000
+});
+pool.on("error", error => {
+  console.error("PostgreSQL pool error:", error.message);
+});
+
+const sessionStore = new PgStore({
+  pool,
+  tableName: "sessions",
+  createTableIfMissing: false,
+  pruneSessionInterval: false
+});
+const app = express();
+const publicDirectory = path.join(__dirname, "public");
+
+app.disable("x-powered-by");
+app.set("trust proxy", process.env.VERCEL === "1" ? 1 : false);
+
+const contentSecurityPolicy = {
+  defaultSrc: ["'self'"],
+  baseUri: ["'self'"],
+  connectSrc: ["'self'"],
+  formAction: ["'self'"],
+  frameAncestors: ["'none'"],
+  imgSrc: ["'self'"],
+  objectSrc: ["'none'"],
+  scriptSrc: ["'self'"],
+  styleSrc: ["'self'"]
+};
+if (process.env.NODE_ENV === "production") {
+  contentSecurityPolicy["upgrade-insecure-requests"] = [];
+}
+app.use(helmet({
+  contentSecurityPolicy: { directives: contentSecurityPolicy }
+}));
+app.use(express.json({ limit: "10kb" }));
+app.use(express.urlencoded({ extended: false, limit: "10kb" }));
+app.use(express.static(publicDirectory, {
+  dotfiles: "deny",
+  index: false
+}));
+app.use(session({
+  name: "nzuri.sid",
+  secret: process.env.SESSION_SECRET,
+  store: sessionStore,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    maxAge: null
+  }
+}));
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: { success: false, message: "Too many attempts. Please wait and try again." }
+});
+const setupLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 5,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: { success: false, message: "Too many setup attempts. Please wait and try again." }
+});
+
+app.get("/", (req, res) => res.sendFile(path.join(publicDirectory, "index.html")));
+app.get("/admin/login", (req, res) => {
+  res.sendFile(path.join(publicDirectory, "admin-login.html"));
+});
+app.get("/admin/setup", (req, res) => {
+  if (!process.env.ADMIN_SETUP_KEY) {
+    res.redirect("/admin/login");
+    return;
+  }
+  res.sendFile(path.join(publicDirectory, "admin-setup.html"));
+});
+app.get("/admin/dashboard", (req, res) => {
+  if (!req.session || !req.session.adminId) {
+    res.redirect("/admin/login");
+    return;
+  }
+  res.sendFile(path.join(publicDirectory, "admin-dashboard.html"));
+});
+
+app.get("/api/health", async (req, res, next) => {
+  try {
+    await pool.query("SELECT 1");
+    res.status(200).json({ success: true, status: "online" });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.use("/api/auth/login", loginLimiter);
+app.use("/api/auth/setup", setupLimiter);
+app.use("/api/auth", createAuthRouter({
+  pool,
+  getSetupKey: () => process.env.ADMIN_SETUP_KEY || ""
+}));
+app.use("/api/admin", createAdminRouter(pool));
+
+app.use("/api", (req, res) => {
+  res.status(404).json({ success: false, message: "API route not found." });
+});
+app.use((req, res) => {
+  res.status(404).type("text").send("Page not found.");
+});
+app.use((error, req, res, next) => {
+  if (res.headersSent) {
+    next(error);
+    return;
+  }
+
+  console.error("Request failed:", error);
+  if (req.path.startsWith("/api/")) {
+    res.status(500).json({
+      success: false,
+      message: "The request could not be completed. Check the server logs for details."
+    });
+    return;
+  }
+  res.status(500).type("text").send("The page could not be loaded.");
+});
+
+module.exports = app;
+
+if (require.main === module) {
+  const port = Number(process.env.PORT || 3000);
+  app.listen(port, "127.0.0.1", () => {
+    console.log(`Nzuri Venue Management is running at http://127.0.0.1:${port}`);
+  });
+}

@@ -1,0 +1,235 @@
+:root {
+  color-scheme: light;
+  --ink: #172c2a;
+  --muted: #5d6b68;
+  --green: #174b48;
+  --green-dark: #103b38;
+  --green-soft: #eaf3ed;
+  --accent: #37d59e;
+  --line: #dce6e0;
+  --surface: #fff;
+  --error: #b42318;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  color: var(--ink);
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+  background:
+    radial-gradient(ellipse at 50% 10%, rgba(224, 239, 230, 0.8), transparent 52%),
+    #f7faf7;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.auth-layout {
+  min-height: 100vh;
+  padding: 40px 20px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-card {
+  width: min(100%, 360px);
+  padding: 30px 28px 26px;
+  border: 1px solid rgba(220, 230, 224, 0.8);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 18px 50px rgba(30, 57, 47, 0.1);
+}
+
+.auth-brand {
+  margin: 0 0 30px;
+  color: var(--green);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-align: center;
+}
+
+.auth-brand span {
+  display: block;
+  margin-top: 4px;
+  font-size: 10px;
+  letter-spacing: 0.13em;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  color: var(--green);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(25px, 6vw, 30px);
+  letter-spacing: -0.04em;
+  text-align: center;
+}
+
+.auth-intro {
+  margin: 9px 0 26px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.55;
+  text-align: center;
+}
+
+.auth-form {
+  display: grid;
+  gap: 9px;
+}
+
+.auth-form > label:not(.remember-control) {
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.auth-form input[type="email"],
+.auth-form input[type="password"],
+.auth-form input[type="text"] {
+  width: 100%;
+  min-height: 46px;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  outline: none;
+  color: var(--ink);
+  background: #fff;
+  font-size: 14px;
+}
+
+.auth-form input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(55, 213, 158, 0.17);
+}
+
+.auth-form input::placeholder {
+  color: #96a29e;
+}
+
+.password-field {
+  position: relative;
+}
+
+.password-field input {
+  padding-right: 64px !important;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  padding: 6px;
+  transform: translateY(-50%);
+  border: 0;
+  color: var(--green);
+  background: transparent;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.remember-control {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 7px 0 5px;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.remember-control input {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--green);
+}
+
+.field-hint {
+  margin-top: -4px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.form-message {
+  margin: 5px 0;
+  color: var(--error);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.form-message.success {
+  color: #176318;
+}
+
+.submit-button {
+  min-height: 46px;
+  margin-top: 3px;
+  border: 0;
+  border-radius: 7px;
+  color: #103b38;
+  background: var(--accent);
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 160ms ease, transform 160ms ease;
+}
+
+.submit-button:hover:not(:disabled) {
+  background: #25ae80;
+  transform: translateY(-1px);
+}
+
+.submit-button:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.back-link {
+  display: block;
+  width: fit-content;
+  margin: 20px auto 0;
+  color: var(--muted);
+  font-size: 12px;
+  text-decoration: none;
+}
+
+.back-link:hover {
+  color: var(--green);
+  text-decoration: underline;
+}
+
+.auth-footer {
+  margin-top: 16px;
+  color: #77817e;
+  font-size: 11px;
+  text-align: center;
+}
+
+@media (max-width: 480px) {
+  .auth-layout {
+    padding: 24px 16px;
+  }
+
+  .auth-card {
+    padding: 28px 22px 24px;
+  }
+}

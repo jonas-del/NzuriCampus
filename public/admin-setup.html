@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#174b48">
+  <title>Initial administrator setup | Nzuri Venue Management</title>
+  <link rel="stylesheet" href="/styles/admin-auth.css">
+  <script src="/scripts/admin-setup.js" defer></script>
+</head>
+<body>
+  <main class="auth-layout">
+    <section class="auth-card" aria-labelledby="page-title">
+      <p class="auth-brand">NZURI <span>VENUE MANAGEMENT</span></p>
+      <p class="eyebrow">One-time setup</p>
+      <h1 id="page-title">Create the first admin</h1>
+      <p class="auth-intro">Use the one-time setup key provided by the project owner. This form is disabled after the first administrator is created.</p>
+
+      <form id="setup-form" class="auth-form">
+        <label for="setup-key">One-time setup key</label>
+        <input id="setup-key" name="setup-key" type="password" autocomplete="off" required>
+
+        <label for="name">Administrator name</label>
+        <input id="name" name="name" type="text" autocomplete="name" maxlength="100" required>
+
+        <label for="email">Email address</label>
+        <input id="email" name="email" type="email" autocomplete="email" maxlength="254" required>
+
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" autocomplete="new-password" minlength="12" required>
+        <span class="field-hint">Use at least 12 characters.</span>
+
+        <label for="password-confirmation">Confirm password</label>
+        <input id="password-confirmation" name="password-confirmation" type="password" autocomplete="new-password" minlength="12" required>
+
+        <p id="form-message" class="form-message" role="alert" aria-live="polite" hidden></p>
+        <button class="submit-button" type="submit">Create administrator</button>
+      </form>
+
+      <a class="back-link" href="/admin/login">← Back to sign in</a>
+    </section>
+
+    <footer class="auth-footer">© 2026 Nzuri Venue Management</footer>
+  </main>
+</body>
+</html>

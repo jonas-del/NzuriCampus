@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#174b48">
+  <title>Admin sign in | Nzuri Venue Management</title>
+  <link rel="stylesheet" href="/styles/admin-auth.css">
+  <script src="/scripts/admin-login.js" defer></script>
+</head>
+<body>
+  <main class="auth-layout">
+    <section class="auth-card" aria-labelledby="page-title">
+      <p class="auth-brand">NZURI <span>VENUE MANAGEMENT</span></p>
+      <p class="eyebrow">Administration</p>
+      <h1 id="page-title">Welcome back</h1>
+      <p class="auth-intro">Sign in to manage your university venues.</p>
+
+      <form id="login-form" class="auth-form">
+        <label for="email">Email address</label>
+        <input id="email" name="email" type="email" autocomplete="username" placeholder="name@university.edu" maxlength="254" required>
+
+        <label for="password">Password</label>
+        <div class="password-field">
+          <input id="password" name="password" type="password" autocomplete="current-password" required>
+          <button class="password-toggle" type="button" aria-label="Show password" aria-pressed="false">Show</button>
+        </div>
+
+        <label class="remember-control" for="remember-me">
+          <input id="remember-me" name="remember-me" type="checkbox">
+          <span>Keep me signed in on this device</span>
+        </label>
+
+        <p id="form-message" class="form-message" role="alert" aria-live="polite" hidden></p>
+        <button class="submit-button" type="submit">Sign in</button>
+      </form>
+
+      <a class="back-link" href="/">← Back to venues</a>
+    </section>
+
+    <footer class="auth-footer">© 2026 Nzuri Venue Management</footer>
+  </main>
+</body>
+</html>
