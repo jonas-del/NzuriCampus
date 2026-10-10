@@ -7,7 +7,7 @@ Nzuri Venue Management uses plain HTML, CSS, and JavaScript with an Express appl
 1. Push this project to a GitHub repository and import that repository into Vercel.
 2. In the Vercel project, install the Neon integration from the Marketplace. Create a Neon PostgreSQL project in the same region as the Vercel Function. Use the pooled connection string for the serverless app.
 3. In Neon Console's SQL Editor, run `database/schema.sql` to create the application and session tables.
-4. In Vercel project settings, confirm `DATABASE_URL` contains the pooled Neon connection string. Add `SESSION_SECRET` and `ADMIN_SETUP_KEY`, each generated with:
+4. In Vercel project settings, set `NZURI_DATABASE_URL` to the pooled Neon connection string for the database that contains the application schema. The app-specific setting takes precedence over any integration-provided `DATABASE_URL`. Add `SESSION_SECRET` and `ADMIN_SETUP_KEY`, each generated with:
 
    ```powershell
    node -e "console.log(require('node:crypto').randomBytes(48).toString('base64url'))"

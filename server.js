@@ -13,13 +13,14 @@ const createAuthRouter = require("./routes/auth");
 const createAdminRouter = require("./routes/admin");
 const { createPublicRouter } = createAdminRouter;
 
-const hasDatabaseUrl = Boolean(process.env.DATABASE_URL);
+const databaseUrl = process.env.NZURI_DATABASE_URL || process.env.DATABASE_URL;
+const hasDatabaseUrl = Boolean(databaseUrl);
 const hasSessionSecret =
   Buffer.byteLength(process.env.SESSION_SECRET || "", "utf8") >= 32;
 const authConfigured = hasDatabaseUrl && hasSessionSecret;
 const pool = hasDatabaseUrl
   ? new Pool({
-      connectionString: process.env.DATABASE_URL,
+      connectionString: databaseUrl,
       ssl: { rejectUnauthorized: true },
       max: 5,
       idleTimeoutMillis: 10000,
