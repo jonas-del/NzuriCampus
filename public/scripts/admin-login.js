@@ -15,6 +15,12 @@ fetch("/api/auth/me", { headers: { Accept: "application/json" } })
   .then(response => {
     if (response.ok) {
       window.location.replace("/admin/dashboard");
+      return;
+    }
+    if (response.status === 503) {
+      return response.json().then(data => {
+        showMessage(data.message || "Admin sign-in is not configured yet.");
+      });
     }
   })
   .catch(() => {

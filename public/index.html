@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#174b48">
   <link rel="stylesheet" href="styles/styles.css">
+  <script src="/scripts/public-app.js" defer></script>
   <title>Nzuri Venue Management</title>
 </head>
 <body>
@@ -18,7 +19,7 @@
       </a>
       <nav class="main-nav" aria-label="Main navigation">
         <a href="/">Home</a>
-        <a href="#how-it-works">Check room availability</a>
+        <a href="#availability">Check room availability</a>
         <a class="login-link" href="/admin/login">Admin login</a>
       </nav>
     </div>
@@ -26,13 +27,125 @@
 
   <main>
     <section class="intro" aria-labelledby="page-title">
-      <p class="eyebrow">Nzuri University of Science</p>
-      <h1 id="page-title">Find and book a campus venue</h1>
-      <p class="intro-copy">
-        Nzuri Venue Management helps students, staff and departments find a space on campus for a class,
-        meeting or event — and request it in a few clicks.
-      </p>
-      <a class="primary-link" href="#how-it-works">Check availability <span aria-hidden="true">→</span></a>
+      <div class="intro-copy-block">
+        <p class="eyebrow">Nzuri University of Science</p>
+        <h1 id="page-title">Find and book a campus venue</h1>
+        <p class="intro-copy">
+          Nzuri Venue Management helps students, staff and departments find a space on campus for a class,
+          meeting or event — and request it in a few clicks.
+        </p>
+        <div class="intro-actions">
+          <a class="primary-link" href="#availability">Check availability <span aria-hidden="true">→</span></a>
+          <a class="secondary-link" href="#how-it-works">How it works</a>
+        </div>
+      </div>
+      <div class="hero-panel" aria-label="Campus space availability overview">
+        <div class="hero-panel-header">
+          <span class="status-dot"></span>
+          <span>Campus spaces live</span>
+        </div>
+        <div class="hero-panel-body">
+          <div>
+            <strong>24</strong>
+            <span>rooms ready</span>
+          </div>
+          <div>
+            <strong>5</strong>
+            <span>active buildings</span>
+          </div>
+          <div>
+            <strong>48h</strong>
+            <span>request window</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="hero-metrics" aria-label="Campus snapshot">
+      <article class="metric-card">
+        <span class="metric-label">Available now</span>
+        <strong>14</strong>
+        <small>Rooms free this hour</small>
+      </article>
+      <article class="metric-card">
+        <span class="metric-label">Avg. capacity</span>
+        <strong>60</strong>
+        <small>Seats per room</small>
+      </article>
+      <article class="metric-card">
+        <span class="metric-label">Admin response</span>
+        <strong>1.2h</strong>
+        <small>Typical follow-up</small>
+      </article>
+    </section>
+
+    <section id="availability" class="availability-section" aria-labelledby="availability-title">
+      <div class="section-heading">
+        <p class="eyebrow">Availability</p>
+        <h2 id="availability-title" class="section-title">Check room availability</h2>
+      </div>
+
+      <form id="availability-form" class="availability-form" novalidate>
+        <div class="field-grid">
+          <label>
+            <span>Starts</span>
+            <input id="starts-at" name="startsAt" type="datetime-local" required>
+          </label>
+          <label>
+            <span>Ends</span>
+            <input id="ends-at" name="endsAt" type="datetime-local" required>
+          </label>
+          <label>
+            <span>Group size</span>
+            <input id="capacity" name="capacity" type="number" min="1" value="20" required>
+          </label>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="primary-button">Search rooms</button>
+        </div>
+      </form>
+
+      <p id="availability-message" class="availability-message" role="status" aria-live="polite" hidden></p>
+      <div id="availability-results" class="availability-results" aria-live="polite"></div>
+    </section>
+
+    <section id="booking-request" class="booking-request-section" aria-labelledby="booking-title">
+      <div class="section-heading">
+        <p class="eyebrow">Request</p>
+        <h2 id="booking-title" class="section-title">Book a room</h2>
+      </div>
+
+      <form id="booking-form" class="booking-form" novalidate>
+        <input type="hidden" id="booking-venue-id" name="venueId">
+        <div class="field-grid">
+          <label>
+            <span>Selected venue</span>
+            <input id="booking-venue" name="venueLabel" type="text" readonly value="Select a room from the availability search above">
+          </label>
+          <label>
+            <span>Event title</span>
+            <input id="event-title" name="eventTitle" type="text" maxlength="180" required>
+          </label>
+          <label>
+            <span>Your email</span>
+            <input id="requester-email" name="requesterEmail" type="email" required>
+          </label>
+        </div>
+        <div class="field-grid">
+          <label>
+            <span>Starts</span>
+            <input id="booking-starts" name="startsAt" type="datetime-local" required>
+          </label>
+          <label>
+            <span>Ends</span>
+            <input id="booking-ends" name="endsAt" type="datetime-local" required>
+          </label>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="primary-button">Request booking</button>
+        </div>
+        <p id="booking-message" class="booking-message" role="status" aria-live="polite" hidden></p>
+      </form>
     </section>
 
     <section id="how-it-works" aria-labelledby="how-title">
@@ -66,8 +179,8 @@
         </section>
         <nav class="footer-links" aria-label="Explore">
           <h2 class="footer-heading">Explore</h2>
-          <a href="#how-it-works">Venue directory</a>
-          <a href="#how-it-works">Check availability</a>
+          <a href="#availability">Venue directory</a>
+          <a href="#availability">Check availability</a>
         </nav>
         <section class="footer-location">
           <h2 class="footer-heading">Nzuri University of Science</h2>

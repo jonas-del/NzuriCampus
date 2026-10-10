@@ -208,6 +208,10 @@ h1 {
   gap: 16px;
 }
 
+.booking-panel {
+  margin-top: 16px;
+}
+
 .panel {
   overflow: hidden;
   border: 1px solid var(--line);
@@ -255,34 +259,239 @@ h1 {
   gap: 9px;
 }
 
-.management-item {
-  min-height: 75px;
-  padding: 12px;
+.panel-body,
+.booking-panel-body {
+  padding: 16px;
+}
+
+.venue-form {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.field-row {
+  display: grid;
+}
+
+.two-up {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.venue-form label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.venue-form input {
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 10px;
   border: 1px solid var(--line);
   border-radius: 8px;
+  color: var(--ink);
+  font: inherit;
+  background: #fff;
+}
+
+.checkbox-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.checkbox-row input {
+  width: 16px;
+  height: 16px;
+  min-height: 16px;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.primary-button,
+.secondary-button,
+.approve-button,
+.reject-button {
+  border: 0;
+  border-radius: 8px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.primary-button {
+  padding: 10px 14px;
+  color: var(--green-dark);
+  background: var(--accent);
+}
+
+.secondary-button,
+.reject-button {
+  padding: 8px 10px;
+  color: var(--ink);
+  background: #edf2ef;
+}
+
+.approve-button {
+  padding: 8px 10px;
+  color: #fff;
+  background: #1d8f66;
+}
+
+.form-message {
+  margin: 0;
+  padding: 9px 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-size: 12px;
+  background: #edf7f1;
+}
+
+.list-wrapper {
+  border-top: 1px solid #edf1ee;
+  padding-top: 16px;
+}
+
+.list-header h3 {
+  margin: 0 0 10px;
+  font-size: 13px;
+}
+
+.venue-list,
+.booking-list {
+  display: grid;
+  gap: 10px;
+}
+
+.venue-item,
+.booking-item {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
   background: #f8fbf8;
 }
 
-.management-item h3 {
-  margin: 0;
-  font-size: 12px;
+.venue-item.inactive {
+  opacity: 0.75;
 }
 
-.management-item p {
+.venue-item h4,
+.booking-item h4 {
+  margin: 0;
+  font-size: 13px;
+}
+
+.venue-item p,
+.booking-item p {
   margin: 5px 0 0;
   color: var(--muted);
-  font-size: 10px;
-  line-height: 1.4;
+  font-size: 11px;
 }
 
-.coming-soon {
-  display: inline-block;
-  margin-top: 8px;
-  color: #65726e;
+.venue-meta,
+.booking-header,
+.booking-actions,
+.venue-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.venue-meta {
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.venue-actions {
+  margin-top: 10px;
+  justify-content: flex-end;
+}
+
+.badge,
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 7px;
+  border-radius: 999px;
   font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: capitalize;
+}
+
+.badge.active {
+  color: #104d3f;
+  background: #dff6ea;
+}
+
+.badge.inactive {
+  color: #6d5550;
+  background: #f5e4df;
+}
+
+.status-badge.status-pending {
+  color: #7a5b11;
+  background: #f7ebc8;
+}
+
+.status-badge.status-approved {
+  color: #124d3d;
+  background: #dff6ea;
+}
+
+.status-badge.status-rejected {
+  color: #7d2d2b;
+  background: #f9dada;
+}
+
+.booking-header {
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.booking-details {
+  margin: 0;
+  display: grid;
+  gap: 7px;
+}
+
+.booking-details div {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.booking-details dt {
   font-weight: 700;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
+}
+
+.booking-details dd {
+  margin: 0;
+  color: var(--ink);
+}
+
+.booking-actions {
+  margin-top: 12px;
+  justify-content: flex-end;
+}
+
+.empty-state {
+  margin: 0;
+  padding: 12px 0 0;
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .overview-list {
@@ -432,6 +641,10 @@ h1 {
   }
 
   .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .two-up {
     grid-template-columns: 1fr;
   }
 

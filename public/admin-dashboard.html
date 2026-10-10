@@ -18,7 +18,7 @@
       <nav class="admin-nav" aria-label="Administration">
         <a class="current" href="/admin/dashboard" aria-current="page">Dashboard</a>
         <span aria-disabled="true" title="Coming in a later phase">Venues</span>
-        <span aria-disabled="true" title="Coming in a later phase">Bookings</span>
+        <a href="#booking-requests">Bookings</a>
         <span aria-disabled="true" title="Coming in a later phase">Timetable</span>
         <span aria-disabled="true" title="Coming in a later phase">Check room availability</span>
         <button id="logout-button" class="logout-button" type="button">Logout</button>
@@ -70,31 +70,45 @@
         <div class="panel-heading">
           <div class="panel-icon" aria-hidden="true">+</div>
           <div>
-            <h2 id="management-title">Management</h2>
-            <p>Manage the main parts of the system.</p>
+            <h2 id="management-title">Venue management</h2>
+            <p>Add a room and keep it active.</p>
           </div>
         </div>
-        <div class="management-grid">
-          <article class="management-item">
-            <h3>Manage venues</h3>
-            <p>Add, edit and manage venues.</p>
-            <span class="coming-soon">Coming later</span>
-          </article>
-          <article class="management-item">
-            <h3>Add venues</h3>
-            <p>Add one venue or upload many from a spreadsheet.</p>
-            <span class="coming-soon">Coming later</span>
-          </article>
-          <article class="management-item">
-            <h3>Booking requests</h3>
-            <p>Review and respond to requests.</p>
-            <span class="coming-soon">Coming later</span>
-          </article>
-          <article class="management-item">
-            <h3>Upload timetable</h3>
-            <p>Import recurring room occupancy.</p>
-            <span class="coming-soon">Coming later</span>
-          </article>
+
+        <div class="panel-body">
+          <form id="venue-form" class="venue-form" novalidate>
+            <div class="field-row">
+              <label>
+                <span>Venue name</span>
+                <input id="venue-name" name="name" type="text" maxlength="150" required>
+              </label>
+            </div>
+            <div class="field-row two-up">
+              <label>
+                <span>Building</span>
+                <input id="venue-building" name="building" type="text" maxlength="150">
+              </label>
+              <label>
+                <span>Capacity</span>
+                <input id="venue-capacity" name="capacity" type="number" min="0" step="1" required>
+              </label>
+            </div>
+            <label class="checkbox-row">
+              <input id="venue-active" name="isActive" type="checkbox" checked>
+              <span>Venue is active</span>
+            </label>
+            <div class="form-actions">
+              <button type="submit" class="primary-button">Add venue</button>
+            </div>
+            <p id="venue-form-message" class="form-message" role="status" aria-live="polite" hidden></p>
+          </form>
+
+          <div class="list-wrapper">
+            <div class="list-header">
+              <h3>Active rooms</h3>
+            </div>
+            <div id="venue-list" class="venue-list" aria-live="polite"></div>
+          </div>
         </div>
       </section>
 
@@ -114,7 +128,21 @@
         </dl>
       </section>
     </div>
-    <p class="phase-note">Venue and booking management actions will be added in later development phases.</p>
+
+    <section id="booking-requests" class="panel booking-panel" aria-labelledby="bookings-title">
+      <div class="panel-heading">
+        <div class="panel-icon" aria-hidden="true">✓</div>
+        <div>
+          <h2 id="bookings-title">Booking requests</h2>
+          <p>Review pending room requests and record a decision.</p>
+        </div>
+      </div>
+      <div class="booking-panel-body">
+        <div id="booking-list" class="booking-list" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <p class="phase-note">Keep rooms active and respond to booking requests from the panels above.</p>
   </main>
 
   <footer class="site-footer">

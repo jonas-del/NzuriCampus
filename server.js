@@ -11,6 +11,7 @@ const helmet = require("helmet");
 const { Pool } = require("pg");
 const createAuthRouter = require("./routes/auth");
 const createAdminRouter = require("./routes/admin");
+const { createPublicRouter } = createAdminRouter;
 
 const hasDatabaseUrl = Boolean(process.env.DATABASE_URL);
 const hasSessionSecret =
@@ -137,21 +138,33 @@ app.get("/api/health", async (req, res, next) => {
   }
 });
 
-if (!authConfigured) {
-  app.use("/api", (req, res) => {
-    res.status(503).json({
-      success: false,
-      message: "Admin sign-in is not configured yet. Add DATABASE_URL and SESSION_SECRET to the Vercel project environment variables, then redeploy."
-    });
-  });
-} else {
+if (authConfigured) {
   app.use("/api/auth/login", loginLimiter);
   app.use("/api/auth/setup", setupLimiter);
   app.use("/api/auth", createAuthRouter({
     pool,
     getSetupKey: () => process.env.ADMIN_SETUP_KEY || ""
   }));
+} else {
+  app.use("/api/auth", (req, res) => {
+    res.status(503).json({
+      success: false,
+      configured: false,
+      message: "Admin sign-in is unavailable until DATABASE_URL and SESSION_SECRET are configured."
+    });
+  });
+}
+app.use("/api", createPublicRouter(pool));
+if (authConfigured) {
   app.use("/api/admin", createAdminRouter(pool));
+} else {
+  app.use("/api/admin", (req, res) => {
+    res.status(503).json({
+      success: false,
+      configured: false,
+      message: "Admin services are unavailable until DATABASE_URL and SESSION_SECRET are configured."
+    });
+  });
 }
 
 app.use("/api", (req, res) => {
