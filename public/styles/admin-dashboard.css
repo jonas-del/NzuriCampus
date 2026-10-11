@@ -87,11 +87,6 @@ a {
   color: var(--accent);
 }
 
-.admin-nav span[aria-disabled="true"] {
-  color: rgba(255, 255, 255, 0.67);
-  cursor: not-allowed;
-}
-
 .logout-button {
   padding: 9px 15px;
   border: 0;
@@ -108,7 +103,7 @@ a {
 }
 
 .dashboard-main {
-  width: min(100% - 40px, 710px);
+  width: min(100% - 40px, 1000px);
   margin: 0 auto;
   flex: 1;
   padding: 38px 0 52px;
@@ -210,6 +205,92 @@ h1 {
 
 .booking-panel {
   margin-top: 16px;
+}
+
+.availability-panel {
+  margin-top: 16px;
+}
+
+.admin-availability-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  align-items: end;
+  gap: 12px;
+}
+
+.admin-availability-form label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.admin-availability-form input {
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  font: inherit;
+  background: #fff;
+}
+
+.availability-list {
+  display: grid;
+  gap: 9px;
+  margin-top: 16px;
+}
+
+.availability-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #f8fbf8;
+}
+
+.availability-item h4 {
+  margin: 0;
+  font-size: 13px;
+}
+
+.availability-item p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.availability-item-status {
+  display: grid;
+  justify-items: end;
+  gap: 5px;
+}
+
+.availability-item-status small {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.availability-badge {
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.availability-badge.available {
+  color: #104d3f;
+  background: #dff6ea;
+}
+
+.availability-badge.unavailable {
+  color: #7d2d2b;
+  background: #f9dada;
 }
 
 .panel {
@@ -631,7 +712,7 @@ h1 {
 
 @media (max-width: 680px) {
   .dashboard-main {
-    width: min(100% - 32px, 710px);
+    width: min(100% - 32px, 1000px);
     padding-top: 30px;
   }
 
@@ -646,6 +727,19 @@ h1 {
 
   .two-up {
     grid-template-columns: 1fr;
+  }
+
+  .admin-availability-form {
+    grid-template-columns: 1fr;
+  }
+
+  .availability-item {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .availability-item-status {
+    justify-items: start;
   }
 
   .footer-columns {

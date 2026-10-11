@@ -13,7 +13,7 @@
     <div class="header-inner">
       <a class="brand" href="/" aria-label="Nzuri Venue Management home">
         <span>
-          <span class="brand-name">NZURI</span>
+          <span class="brand-name">NZURI NUS</span>
           <span class="brand-subtitle">Venue Management</span>
         </span>
       </a>
@@ -46,16 +46,16 @@
         </div>
         <div class="hero-panel-body">
           <div>
-            <strong>24</strong>
-            <span>rooms ready</span>
+            <strong id="public-total-venues">—</strong>
+            <span>active venues</span>
           </div>
           <div>
-            <strong>5</strong>
-            <span>active buildings</span>
+            <strong id="public-available-venues">—</strong>
+            <span>available now</span>
           </div>
           <div>
-            <strong>48h</strong>
-            <span>request window</span>
+            <strong id="public-occupied-venues">—</strong>
+            <span>in use now</span>
           </div>
         </div>
       </div>
@@ -63,21 +63,22 @@
 
     <section class="hero-metrics" aria-label="Campus snapshot">
       <article class="metric-card">
-        <span class="metric-label">Available now</span>
-        <strong>14</strong>
-        <small>Rooms free this hour</small>
+        <span class="metric-label">Active buildings</span>
+        <strong id="public-building-count">—</strong>
+        <small>Buildings with active venues</small>
       </article>
       <article class="metric-card">
         <span class="metric-label">Avg. capacity</span>
-        <strong>60</strong>
-        <small>Seats per room</small>
+        <strong id="public-average-capacity">—</strong>
+        <small>Seats per active venue</small>
       </article>
       <article class="metric-card">
-        <span class="metric-label">Admin response</span>
-        <strong>1.2h</strong>
-        <small>Typical follow-up</small>
+        <span class="metric-label">Pending requests</span>
+        <strong id="public-pending-bookings">—</strong>
+        <small>Awaiting administrator review</small>
       </article>
     </section>
+    <p id="public-summary-message" class="availability-message" role="status" aria-live="polite" hidden></p>
 
     <section id="availability" class="availability-section" aria-labelledby="availability-title">
       <div class="section-heading">

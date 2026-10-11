@@ -17,12 +17,69 @@ const pool = {
   async query(sql, values = []) {
     const text = String(sql).trim();
 
+    if (text.includes("AS total_venues") && text.includes("AS building_count")) {
+      const activeVenues = venues.filter(venue => venue.is_active === true);
+      const now = Date.now();
+      const occupiedVenueIds = new Set(bookings
+        .filter(booking => booking.status === "approved"
+          && new Date(booking.starts_at).getTime() <= now
+          && new Date(booking.ends_at).getTime() > now)
+        .map(booking => booking.venue_id));
+      const isWeekend = new Intl.DateTimeFormat("en-US", { timeZone: "Africa/Nairobi", weekday: "short" })
+        .format(new Date()) === "Sat"
+        || new Intl.DateTimeFormat("en-US", { timeZone: "Africa/Nairobi", weekday: "short" })
+          .format(new Date()) === "Sun";
+      return { rows: [{
+        total_venues: String(activeVenues.length),
+        available_venues: String(activeVenues.length - (isWeekend ? 0 : occupiedVenueIds.size)),
+        occupied_venues: String(isWeekend ? 0 : occupiedVenueIds.size),
+        pending_bookings: String(bookings.filter(booking => booking.status === "pending").length),
+        approved_bookings: String(bookings.filter(booking => booking.status === "approved").length),
+        rejected_bookings: String(bookings.filter(booking => booking.status === "rejected").length),
+        total_bookings: String(bookings.length),
+        building_count: String(new Set(activeVenues.map(venue => venue.building.trim()).filter(Boolean)).size),
+        average_capacity: String(Math.round(activeVenues.reduce((sum, venue) => sum + venue.capacity, 0) / (activeVenues.length || 1)))
+      }] };
+    }
+
     if (text.startsWith("SELECT id, name, building, capacity, is_active, created_at")) {
       return { rows: venues.filter(venue => venue.is_active === true) };
     }
 
-    if (text.startsWith("SELECT v.id, v.name, v.building, v.capacity, v.is_active, v.created_at")) {
-      return { rows: venues.filter(venue => venue.capacity >= Number(values[2]) && !bookings.some(booking => booking.venue_id === venue.id && booking.status === "approved" && new Date(booking.starts_at) < new Date(values[1]) && new Date(booking.ends_at) > new Date(values[0]))) };
+    if (text.includes("LEFT JOIN bookings b") && text.startsWith("SELECT v.id, v.name, v.building, v.capacity, v.is_active, v.created_at")) {
+      return { rows: venues.filter(venue => venue.capacity >= Number(values[2]) && (values[3] || !bookings.some(booking => booking.venue_id === venue.id && booking.status === "approved" && new Date(booking.starts_at) < new Date(values[1]) && new Date(booking.ends_at) > new Date(values[0])))) };
+    }
+
+    if (text.startsWith("SELECT v.id, v.name, v.building, v.capacity, v.is_active, v.created_at,")) {
+      return { rows: venues.filter(venue => venue.is_active).map(venue => {
+        const isAvailable = values[2] || !bookings.some(booking => booking.venue_id === venue.id
+          && booking.status === "approved"
+          && new Date(booking.starts_at) < new Date(values[1])
+          && new Date(booking.ends_at) > new Date(values[0]));
+        const isInUse = !values[3] && bookings.some(booking => booking.venue_id === venue.id
+          && booking.status === "approved"
+          && new Date(booking.starts_at) <= Date.now()
+          && new Date(booking.ends_at) > Date.now());
+        return { ...venue, is_available: isAvailable, is_in_use: isInUse };
+      }) };
+    }
+
+    if (text.includes("id <> $2") && text.startsWith("SELECT id FROM bookings")) {
+      return { rows: bookings.filter(booking => booking.venue_id === Number(values[0])
+        && booking.id !== Number(values[1])
+        && booking.status === "approved"
+        && new Date(booking.starts_at) < new Date(values[3])
+        && new Date(booking.ends_at) > new Date(values[2]))
+        .slice(0, 1) };
+    }
+
+    if (text.startsWith("SELECT id, venue_id, starts_at, ends_at FROM bookings")) {
+      return { rows: bookings.filter(booking => booking.id === Number(values[0])).map(booking => ({
+        id: booking.id,
+        venue_id: booking.venue_id,
+        starts_at: booking.starts_at,
+        ends_at: booking.ends_at
+      })) };
     }
 
     if (text.includes("INSERT INTO bookings")) {
@@ -53,7 +110,7 @@ const pool = {
     }
 
     if (text.startsWith("SELECT b.id, b.venue_id")) {
-      return { rows: bookings.map(booking => ({
+      return { rows: [...bookings].sort((left, right) => new Date(right.starts_at) - new Date(left.starts_at)).map(booking => ({
         ...booking,
         venue_name: venues.find(venue => venue.id === booking.venue_id)?.name || "",
         venue_building: venues.find(venue => venue.id === booking.venue_id)?.building || ""
@@ -145,6 +202,50 @@ test("public venue listing and booking request work", async () => {
   });
   assert.equal(response.status, 201);
   assert.equal((await response.json()).booking.status, "pending");
+
+  response = await fetch(`${baseUrl}/api/venues/summary`);
+  assert.equal(response.status, 200);
+  const summary = (await response.json()).summary;
+  assert.equal(summary.totalVenues, 2);
+  assert.equal(summary.buildingCount, 2);
+  assert.equal(summary.averageCapacity, 78);
+});
+
+test("weekend availability and booking requests ignore approved bookings", async () => {
+  bookings.push({
+    id: 900,
+    venue_id: 1,
+    starts_at: "2026-02-07T09:00:00.000Z",
+    ends_at: "2026-02-07T12:00:00.000Z",
+    status: "approved"
+  }, {
+    id: 901,
+    venue_id: 2,
+    starts_at: "2026-02-08T09:00:00.000Z",
+    ends_at: "2026-02-08T12:00:00.000Z",
+    status: "approved"
+  });
+  let response = await fetch(`${baseUrl}/api/venues/availability?startsAt=2026-02-07T10:00:00Z&endsAt=2026-02-07T11:00:00Z&capacity=20`);
+  assert.equal(response.status, 200);
+  const availability = await response.json();
+  assert.equal(availability.available.length, 2);
+
+  response = await fetch(`${baseUrl}/api/venues/availability?startsAt=2026-02-08T10:00:00Z&endsAt=2026-02-08T11:00:00Z&capacity=20`);
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).available.length, 2);
+
+  response = await fetch(`${baseUrl}/api/bookings`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      venueId: 1,
+      requesterEmail: "weekend@example.test",
+      eventTitle: "Weekend activity",
+      startsAt: "2026-02-07T10:00:00Z",
+      endsAt: "2026-02-07T11:00:00Z"
+    })
+  });
+  assert.equal(response.status, 201);
 });
 
 test("admin can list venues and change booking status", async () => {
@@ -170,12 +271,52 @@ test("admin can list venues and change booking status", async () => {
   assert.equal(response.status, 200);
   const bookingList = await response.json();
   assert.equal(bookingList.bookings.length >= 1, true);
+  const bookingToApprove = bookingList.bookings.find(booking => booking.venueId === 2
+    && new Date(booking.startsAt).toISOString() === "2026-02-02T10:00:00.000Z");
+  assert.ok(bookingToApprove);
 
-  response = await fetch(`${baseUrl}/api/admin/bookings/${bookingList.bookings[0].id}/status`, {
+  response = await fetch(`${baseUrl}/api/admin/bookings/${bookingToApprove.id}/status`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ status: "approved" })
   });
   assert.equal(response.status, 200);
   assert.equal((await response.json()).booking.status, "approved");
+
+  response = await fetch(`${baseUrl}/api/admin/availability?startsAt=2026-02-02T10:00:00Z&endsAt=2026-02-02T12:00:00Z`);
+  assert.equal(response.status, 200);
+  const availability = await response.json();
+  assert.equal(availability.venues.length, 2);
+  assert.equal(availability.venues.find(venue => venue.id === 2).isAvailable, false);
+});
+
+test("admin cannot approve overlapping weekday bookings", async () => {
+  const bookingRequest = {
+    venueId: 1,
+    requesterEmail: "student@example.test",
+    eventTitle: "Lecture",
+    startsAt: "2026-03-02T10:00:00Z",
+    endsAt: "2026-03-02T11:00:00Z"
+  };
+  const firstResponse = await fetch(`${baseUrl}/api/bookings`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(bookingRequest)
+  });
+  const firstBooking = (await firstResponse.json()).booking;
+  const secondResponse = await fetch(`${baseUrl}/api/bookings`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(bookingRequest)
+  });
+  const secondBooking = (await secondResponse.json()).booking;
+
+  const approve = id => fetch(`${baseUrl}/api/admin/bookings/${id}/status`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status: "approved" })
+  });
+  assert.equal((await approve(firstBooking.id)).status, 200);
+  const rejectedConflict = await approve(secondBooking.id);
+  assert.equal(rejectedConflict.status, 409);
 });

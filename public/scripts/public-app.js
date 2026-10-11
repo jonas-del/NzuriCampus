@@ -5,6 +5,35 @@ const availabilityResults = document.querySelector("#availability-results");
 const availabilityMessage = document.querySelector("#availability-message");
 const bookingForm = document.querySelector("#booking-form");
 const bookingMessage = document.querySelector("#booking-message");
+const summaryMessage = document.querySelector("#public-summary-message");
+
+const loadPublicSummary = async () => {
+  try {
+    const response = await fetch("/api/venues/summary", { headers: { Accept: "application/json" } });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || "Unable to load live campus statistics.");
+    }
+
+    if (data.configured === false || !data.summary) {
+      summaryMessage.textContent = "Live campus statistics are unavailable until the venue database is connected.";
+      summaryMessage.hidden = false;
+      return;
+    }
+
+    const summary = data.summary;
+    document.querySelector("#public-total-venues").textContent = summary.totalVenues;
+    document.querySelector("#public-available-venues").textContent = summary.availableVenues;
+    document.querySelector("#public-occupied-venues").textContent = summary.occupiedVenues;
+    document.querySelector("#public-building-count").textContent = summary.buildingCount;
+    document.querySelector("#public-average-capacity").textContent = summary.averageCapacity;
+    document.querySelector("#public-pending-bookings").textContent = summary.pendingBookings;
+    summaryMessage.hidden = true;
+  } catch (error) {
+    summaryMessage.textContent = error.message || "Unable to load live campus statistics.";
+    summaryMessage.hidden = false;
+  }
+};
 
 const formatDateTime = value => {
   if (!value) return "—";
@@ -203,3 +232,5 @@ availabilityResults.addEventListener("click", selectVenue);
 bookingForm.addEventListener("submit", submitBooking);
 populateDefaultSearch();
 availabilityForm.dispatchEvent(new Event("submit"));
+loadPublicSummary();
+window.setInterval(loadPublicSummary, 60000);

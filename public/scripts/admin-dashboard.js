@@ -6,6 +6,26 @@ const venueFormMessage = document.querySelector("#venue-form-message");
 const venueList = document.querySelector("#venue-list");
 const bookingList = document.querySelector("#booking-list");
 const logoutButton = document.querySelector("#logout-button");
+const availabilityForm = document.querySelector("#admin-availability-form");
+const availabilityList = document.querySelector("#admin-availability-list");
+const availabilityMessage = document.querySelector("#admin-availability-message");
+
+const localDateTime = date => {
+  const adjusted = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return adjusted.toISOString().slice(0, 16);
+};
+
+const populateAvailabilityRange = () => {
+  const startsAt = document.querySelector("#admin-availability-starts");
+  const endsAt = document.querySelector("#admin-availability-ends");
+  const start = new Date();
+  start.setMinutes(0, 0, 0);
+  start.setHours(start.getHours() + 1);
+  const end = new Date(start.getTime());
+  end.setHours(end.getHours() + 1);
+  startsAt.value = localDateTime(start);
+  endsAt.value = localDateTime(end);
+};
 
 const showDashboardMessage = text => {
   dashboardMessage.textContent = text;
@@ -51,6 +71,31 @@ const renderVenueList = venues => {
       </div>
     </article>
   `).join("");
+};
+
+const renderAvailabilityList = venues => {
+  if (!availabilityList) return;
+  if (!venues.length) {
+    availabilityList.innerHTML = '<p class="empty-state">No active venues are available to check.</p>';
+    return;
+  }
+
+  availabilityList.innerHTML = venues.map(venue => {
+    const availabilityStatus = venue.isAvailable ? "Available" : "Booked for selected time";
+    const currentStatus = venue.isInUse ? "In use now" : "Not in use now";
+    return `
+      <article class="availability-item">
+        <div>
+          <h4>${escapeHtml(venue.name)}</h4>
+          <p>${escapeHtml(venue.building || "No building recorded")} · ${venue.capacity} seats</p>
+        </div>
+        <div class="availability-item-status">
+          <span class="availability-badge ${venue.isAvailable ? "available" : "unavailable"}">${availabilityStatus}</span>
+          <small>${currentStatus}</small>
+        </div>
+      </article>
+    `;
+  }).join("");
 };
 
 const renderBookingList = bookings => {
@@ -103,11 +148,20 @@ const formatDateTime = value => {
 
 const loadDashboard = async () => {
   try {
-    const [sessionResponse, summaryResponse, venuesResponse, bookingsResponse] = await Promise.all([
+    const startsAt = document.querySelector("#admin-availability-starts").value;
+    const endsAt = document.querySelector("#admin-availability-ends").value;
+    const validAvailabilityRange = startsAt && endsAt && new Date(endsAt) > new Date(startsAt);
+    let availabilityRequest = Promise.resolve(null);
+    if (validAvailabilityRange) {
+      const availabilityQuery = new URLSearchParams({ startsAt, endsAt });
+      availabilityRequest = fetch(`/api/admin/availability?${availabilityQuery.toString()}`, { headers: { Accept: "application/json" } });
+    }
+    const [sessionResponse, summaryResponse, venuesResponse, bookingsResponse, availabilityResponse] = await Promise.all([
       fetch("/api/auth/me", { headers: { Accept: "application/json" } }),
       fetch("/api/admin/summary", { headers: { Accept: "application/json" } }),
       fetch("/api/admin/venues", { headers: { Accept: "application/json" } }),
-      fetch("/api/admin/bookings", { headers: { Accept: "application/json" } })
+      fetch("/api/admin/bookings", { headers: { Accept: "application/json" } }),
+      availabilityRequest
     ]);
 
     if (sessionResponse.status === 401 || summaryResponse.status === 401) {
@@ -119,6 +173,7 @@ const loadDashboard = async () => {
     const summaryData = await summaryResponse.json();
     const venuesData = await venuesResponse.json();
     const bookingsData = await bookingsResponse.json();
+    const availabilityData = availabilityResponse ? await availabilityResponse.json() : null;
 
     if (!sessionResponse.ok || !summaryResponse.ok) {
       throw new Error(summaryData.message || sessionData.message || "Unable to load dashboard data.");
@@ -130,6 +185,9 @@ const loadDashboard = async () => {
 
     if (!bookingsResponse.ok) {
       throw new Error(bookingsData.message || "Unable to load booking requests.");
+    }
+    if (availabilityResponse && !availabilityResponse.ok) {
+      throw new Error(availabilityData.message || "Unable to load room availability.");
     }
 
     document.querySelector("#admin-name").textContent = sessionData.admin.name;
@@ -150,8 +208,36 @@ const loadDashboard = async () => {
     });
     renderVenueList(venuesData.venues || []);
     renderBookingList(visibleBookings);
+    if (availabilityData) {
+      renderAvailabilityList(availabilityData.venues || []);
+      if (availabilityData.isWeekend) {
+        setFormMessage(availabilityMessage, "Weekend schedule: all active venues are treated as available.", false);
+      } else {
+        availabilityMessage.hidden = true;
+      }
+    } else {
+      setFormMessage(availabilityMessage, "Enter a valid start and end time to check room availability.", true);
+    }
+    dashboardMessage.hidden = true;
   } catch (error) {
     showDashboardMessage(error.message || "Unable to load dashboard data. Please refresh to try again.");
+  }
+};
+
+const loadAvailability = async () => {
+  const startsAt = document.querySelector("#admin-availability-starts").value;
+  const endsAt = document.querySelector("#admin-availability-ends").value;
+  const startDate = new Date(startsAt);
+  const endDate = new Date(endsAt);
+  if (!startsAt || !endsAt || Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime()) || endDate <= startDate) {
+    setFormMessage(availabilityMessage, "Enter a valid date range with an end time later than the start time.", true);
+    return;
+  }
+
+  await loadDashboard();
+  if (!dashboardMessage.hidden) return;
+  if (availabilityMessage.hidden) {
+    setFormMessage(availabilityMessage, "Room availability updated.", false);
   }
 };
 
@@ -253,6 +339,10 @@ logoutButton.addEventListener("click", async () => {
 });
 
 venueForm.addEventListener("submit", createVenue);
+availabilityForm.addEventListener("submit", event => {
+  event.preventDefault();
+  loadAvailability();
+});
 venueList.addEventListener("click", event => {
   const toggleButton = event.target.closest("[data-venue-toggle]");
   if (!toggleButton) return;
@@ -272,4 +362,6 @@ bookingList.addEventListener("click", event => {
   }
 });
 
+populateAvailabilityRange();
 loadDashboard();
+window.setInterval(loadDashboard, 60000);

@@ -35,6 +35,57 @@ const serializeBooking = row => ({
   createdAt: row.created_at
 });
 
+const isCampusWeekend = date => ["Sat", "Sun"].includes(
+  new Intl.DateTimeFormat("en-US", { timeZone: "Africa/Nairobi", weekday: "short" }).format(date)
+);
+
+const getSummary = async pool => {
+  const isWeekend = isCampusWeekend(new Date());
+  const { rows } = await pool.query(`
+    SELECT
+      (SELECT COUNT(*) FROM venues WHERE is_active = TRUE) AS total_venues,
+      (SELECT COUNT(*)
+         FROM venues v
+        WHERE v.is_active = TRUE
+          AND ($1::boolean OR NOT EXISTS (
+            SELECT 1
+              FROM bookings b
+             WHERE b.venue_id = v.id
+               AND b.status = 'approved'
+               AND b.starts_at <= NOW()
+               AND b.ends_at > NOW()
+          ))) AS available_venues,
+      (SELECT COUNT(DISTINCT b.venue_id)
+         FROM bookings b
+         JOIN venues v ON v.id = b.venue_id
+        WHERE v.is_active = TRUE
+          AND b.status = 'approved'
+          AND b.starts_at <= NOW()
+          AND b.ends_at > NOW()
+          AND $1::boolean = FALSE) AS occupied_venues,
+      (SELECT COUNT(*) FROM bookings WHERE status = 'pending') AS pending_bookings,
+      (SELECT COUNT(*) FROM bookings WHERE status = 'approved') AS approved_bookings,
+      (SELECT COUNT(*) FROM bookings WHERE status = 'rejected') AS rejected_bookings,
+      (SELECT COUNT(*) FROM bookings) AS total_bookings,
+      (SELECT COUNT(DISTINCT NULLIF(BTRIM(building), ''))
+         FROM venues WHERE is_active = TRUE) AS building_count,
+      (SELECT COALESCE(ROUND(AVG(capacity)), 0)
+         FROM venues WHERE is_active = TRUE) AS average_capacity
+  `, [isWeekend]);
+  const row = rows[0];
+  return {
+    totalVenues: Number(row.total_venues),
+    availableVenues: Number(row.available_venues),
+    occupiedVenues: Number(row.occupied_venues),
+    pendingBookings: Number(row.pending_bookings),
+    approvedBookings: Number(row.approved_bookings),
+    rejectedBookings: Number(row.rejected_bookings),
+    totalBookings: Number(row.total_bookings),
+    buildingCount: Number(row.building_count),
+    averageCapacity: Number(row.average_capacity)
+  };
+};
+
 const createPublicRouter = pool => {
   const router = express.Router();
 
@@ -61,6 +112,24 @@ const createPublicRouter = pool => {
         configured: true,
         venues: rows.map(serializeVenue)
       });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get("/venues/summary", async (req, res, next) => {
+    try {
+      if (!pool) {
+        res.status(200).json({
+          success: true,
+          configured: false,
+          summary: null
+        });
+        return;
+      }
+
+      const summary = await getSummary(pool);
+      res.status(200).json({ success: true, configured: true, summary });
     } catch (error) {
       next(error);
     }
@@ -114,11 +183,17 @@ const createPublicRouter = pool => {
            AND b.status = 'approved'
            AND b.starts_at < $2
            AND b.ends_at > $1
+           AND $4::boolean = FALSE
          WHERE v.is_active = TRUE
            AND v.capacity >= $3
            AND b.id IS NULL
          ORDER BY v.capacity DESC, v.name ASC
-      `, [startsAt.toISOString(), endsAt.toISOString(), Number.isFinite(capacity) && capacity >= 0 ? capacity : 0]);
+      `, [
+        startsAt.toISOString(),
+        endsAt.toISOString(),
+        Number.isFinite(capacity) && capacity >= 0 ? capacity : 0,
+        isCampusWeekend(startsAt)
+      ]);
 
       res.status(200).json({
         success: true,
@@ -189,15 +264,17 @@ const createPublicRouter = pool => {
         return;
       }
 
-      const conflictResult = await pool.query(
-        `SELECT id FROM bookings
-          WHERE venue_id = $1
-            AND status = 'approved'
-            AND starts_at < $3
-            AND ends_at > $2
-          LIMIT 1`,
-        [venueId, startDate.toISOString(), endDate.toISOString()]
-      );
+      const conflictResult = isCampusWeekend(startDate)
+        ? { rows: [] }
+        : await pool.query(
+          `SELECT id FROM bookings
+            WHERE venue_id = $1
+              AND status = 'approved'
+              AND starts_at < $3
+              AND ends_at > $2
+            LIMIT 1`,
+          [venueId, startDate.toISOString(), endDate.toISOString()]
+        );
 
       if (conflictResult.rows.length > 0) {
         res.status(409).json({
@@ -233,44 +310,59 @@ const createAdminRouter = pool => {
 
   router.get("/summary", requireAdmin, async (req, res, next) => {
     try {
-      const { rows } = await pool.query(`
-        SELECT
-          (SELECT COUNT(*) FROM venues WHERE is_active = TRUE) AS total_venues,
-          (SELECT COUNT(*)
-             FROM venues v
-            WHERE v.is_active = TRUE
-              AND NOT EXISTS (
-                SELECT 1
-                  FROM bookings b
-                 WHERE b.venue_id = v.id
-                   AND b.status = 'approved'
-                   AND b.starts_at <= NOW()
-                   AND b.ends_at > NOW()
-              )) AS available_venues,
-          (SELECT COUNT(DISTINCT b.venue_id)
-             FROM bookings b
-             JOIN venues v ON v.id = b.venue_id
-            WHERE v.is_active = TRUE
-              AND b.status = 'approved'
-              AND b.starts_at <= NOW()
-              AND b.ends_at > NOW()) AS occupied_venues,
-          (SELECT COUNT(*) FROM bookings WHERE status = 'pending') AS pending_bookings,
-          (SELECT COUNT(*) FROM bookings WHERE status = 'approved') AS approved_bookings,
-          (SELECT COUNT(*) FROM bookings WHERE status = 'rejected') AS rejected_bookings,
-          (SELECT COUNT(*) FROM bookings) AS total_bookings
-      `);
-      const row = rows[0];
-      const summary = {
-        totalVenues: Number(row.total_venues),
-        availableVenues: Number(row.available_venues),
-        occupiedVenues: Number(row.occupied_venues),
-        pendingBookings: Number(row.pending_bookings),
-        approvedBookings: Number(row.approved_bookings),
-        rejectedBookings: Number(row.rejected_bookings),
-        totalBookings: Number(row.total_bookings)
-      };
-
+      const summary = await getSummary(pool);
       res.status(200).json({ success: true, summary });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get("/availability", requireAdmin, async (req, res, next) => {
+    try {
+      const startsAt = new Date(req.query.startsAt || "");
+      const endsAt = new Date(req.query.endsAt || "");
+      if (Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime()) || endsAt <= startsAt) {
+        res.status(400).json({
+          success: false,
+          message: "Provide valid startsAt and endsAt values where the end time is later than the start time."
+        });
+        return;
+      }
+
+      const { rows } = await pool.query(`
+        SELECT v.id, v.name, v.building, v.capacity, v.is_active, v.created_at,
+               CASE WHEN $3::boolean THEN TRUE ELSE NOT EXISTS (
+                 SELECT 1
+                   FROM bookings b
+                  WHERE b.venue_id = v.id
+                    AND b.status = 'approved'
+                    AND b.starts_at < $2
+                    AND b.ends_at > $1
+               ) END AS is_available,
+               CASE WHEN $4::boolean THEN FALSE ELSE EXISTS (
+                 SELECT 1
+                   FROM bookings b
+                  WHERE b.venue_id = v.id
+                    AND b.status = 'approved'
+                    AND b.starts_at <= NOW()
+                    AND b.ends_at > NOW()
+               ) END AS is_in_use
+          FROM venues v
+         WHERE v.is_active = TRUE
+         ORDER BY v.name ASC
+      `, [startsAt.toISOString(), endsAt.toISOString(), isCampusWeekend(startsAt), isCampusWeekend(new Date())]);
+
+      res.status(200).json({
+        success: true,
+        startsAt: startsAt.toISOString(),
+        endsAt: endsAt.toISOString(),
+        isWeekend: isCampusWeekend(startsAt),
+        venues: rows.map(row => ({
+          ...serializeVenue(row),
+          isAvailable: Boolean(row.is_available),
+          isInUse: Boolean(row.is_in_use)
+        }))
+      });
     } catch (error) {
       next(error);
     }
@@ -466,6 +558,38 @@ const createAdminRouter = pool => {
       if (!["pending", "approved", "rejected"].includes(status)) {
         res.status(400).json({ success: false, message: "Status must be pending, approved, or rejected." });
         return;
+      }
+
+      if (status === "approved") {
+        const bookingResult = await pool.query(
+          "SELECT id, venue_id, starts_at, ends_at FROM bookings WHERE id = $1 LIMIT 1",
+          [id]
+        );
+        const booking = bookingResult.rows[0];
+        if (!booking) {
+          res.status(404).json({ success: false, message: "Booking not found." });
+          return;
+        }
+
+        if (!isCampusWeekend(new Date(booking.starts_at))) {
+          const conflictResult = await pool.query(
+            `SELECT id FROM bookings
+              WHERE venue_id = $1
+                AND id <> $2
+                AND status = 'approved'
+                AND starts_at < $4
+                AND ends_at > $3
+              LIMIT 1`,
+            [booking.venue_id, id, booking.starts_at, booking.ends_at]
+          );
+          if (conflictResult.rows.length > 0) {
+            res.status(409).json({
+              success: false,
+              message: "This venue already has an approved booking during that time."
+            });
+            return;
+          }
+        }
       }
 
       const { rows } = await pool.query(

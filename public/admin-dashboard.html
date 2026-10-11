@@ -17,10 +17,9 @@
       </a>
       <nav class="admin-nav" aria-label="Administration">
         <a class="current" href="/admin/dashboard" aria-current="page">Dashboard</a>
-        <span aria-disabled="true" title="Coming in a later phase">Venues</span>
+        <a href="#venues">Venues</a>
         <a href="#booking-requests">Bookings</a>
-        <span aria-disabled="true" title="Coming in a later phase">Timetable</span>
-        <span aria-disabled="true" title="Coming in a later phase">Check room availability</span>
+        <a href="#room-availability">Check room availability</a>
         <button id="logout-button" class="logout-button" type="button">Logout</button>
       </nav>
     </div>
@@ -66,7 +65,7 @@
     </section>
 
     <div class="dashboard-grid">
-      <section class="panel management-panel" aria-labelledby="management-title">
+      <section id="venues" class="panel management-panel" aria-labelledby="management-title">
         <div class="panel-heading">
           <div class="panel-icon" aria-hidden="true">+</div>
           <div>
@@ -105,7 +104,7 @@
 
           <div class="list-wrapper">
             <div class="list-header">
-              <h3>Active rooms</h3>
+              <h3>Campus venues</h3>
             </div>
             <div id="venue-list" class="venue-list" aria-live="polite"></div>
           </div>
@@ -128,6 +127,31 @@
         </dl>
       </section>
     </div>
+
+    <section id="room-availability" class="panel availability-panel" aria-labelledby="availability-title">
+      <div class="panel-heading">
+        <div class="panel-icon" aria-hidden="true">◷</div>
+        <div>
+          <h2 id="availability-title">Check room availability</h2>
+          <p>See which active rooms are free for the selected time.</p>
+        </div>
+      </div>
+      <div class="panel-body">
+        <form id="admin-availability-form" class="admin-availability-form" novalidate>
+          <label>
+            <span>Starts</span>
+            <input id="admin-availability-starts" type="datetime-local" required>
+          </label>
+          <label>
+            <span>Ends</span>
+            <input id="admin-availability-ends" type="datetime-local" required>
+          </label>
+          <button type="submit" class="primary-button">Check rooms</button>
+        </form>
+        <p id="admin-availability-message" class="form-message" role="status" aria-live="polite" hidden></p>
+        <div id="admin-availability-list" class="availability-list" aria-live="polite"></div>
+      </div>
+    </section>
 
     <section id="booking-requests" class="panel booking-panel" aria-labelledby="bookings-title">
       <div class="panel-heading">
